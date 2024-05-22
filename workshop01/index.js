@@ -3,7 +3,7 @@ const express = require('express');
 const app = express();
 const hbs = require('hbs');
 const hostname = '127.0.0.1';
-const port = 8080;
+const port = process.env.PORT ||8080;
 const { dynamicTextSelector } = require('./src/dynamicText');
 
 const viewsPath = path.join(__dirname, './views');
