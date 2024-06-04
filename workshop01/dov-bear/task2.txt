@@ -11,5 +11,5 @@ docker run -d \
 
 # run the app 
 docker run -d -p 8080:3000 \
-  --network mynet -e DB_HOST='mydb' -e DB_USER='root' -e DB_PASSWORD='changeit' \ 
+  --network mynet -e DB_HOST='mydb' -e DB_USER='root' -e DB_PASSWORD='changeit' --name app \ 
   stackupiss/northwind-app:v1

@@ -1,0 +1,36 @@
+# refer to task 2 for the corresponding separately deployed app.
+# create network and volume like : <dirname>_<namedefinedhere> 
+networks: 
+  mynet: 
+
+volumes: 
+  myvol: 
+
+# where the containers are 
+services:
+  mydb: 
+    image: stackupiss/northwind-app:v1
+    networks: 
+      - mynet
+    volumes: 
+      - myvol:/var/lib/mysql
+  app:
+    image: stackupiss/northwind-db:v1
+    environment:
+      - DB_HOST=mydb
+      - DB_USEr=root 
+      - DB_PASSWORD=changeit
+    ports:
+      - 8080:3000
+    network:
+      - mynet
+    depends_on:
+      - mydb
+
+
+# then go to the directory where the compose files are, asnd run:
+# docker compose ip -d 
+# docker compose ps (show only those involved in the compose file)
+
+# then run the app would be:
+# docker compose run 
