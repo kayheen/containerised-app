@@ -1,0 +1,48 @@
+--- 
+apiVersion: apps/v1
+kind: Deployment
+metadata: 
+  name: bggdb-deploy
+  namespace: bggns
+  labels: 
+    app: bgg 
+    name: bggdb-deploy
+spec: 
+  replicas: 1
+  selector: 
+    matchLabels: # pods that belong to this deployment has the following labels (helps kubernetes to determine which ports belong to this deployment)
+      app: bgg 
+      name: bggdb
+  template: # no header needed here
+    # pod template
+    metadata: 
+      name: bggdb
+      namespace: bggns
+      labels:
+        app: bgg
+        name: bggdb
+    spec:
+      containers: 
+        - name: bggdb-container 
+          image: stackupiss/bgg-database:v1
+          imagePullPolicy: IfNotPresent # what to do when kubernetes wants to pull the image. --> can set to Never but node MUST have image preloaded.
+          ports: 
+            - containerPort: 3306 # container port not the port on your local cluster. 
+---
+apiVersion: v1
+kind: Service 
+metadata: 
+  name: bggdb-svc 
+  namespace: bggns
+  labels: 
+      app: bgg 
+      name: bggdb-svc 
+spec: 
+  type: ClusterIP 
+  selector: 
+    app: bgg
+    name: bggdb
+  ports: 
+    - name: service-port
+      port: 3306
+      targetPort: 3306

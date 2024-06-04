@@ -1,0 +1,46 @@
+--- 
+apiVersion: apps/v1
+kind: Deployment
+metadata: 
+  name: dov-deploy # can create using k apply or k create 
+  # generateName: dov-deploy- # allows u to create MANY copies of the same yml, cause they will append prefix at the back. only can use with k create
+  namespace: myns
+  labels: 
+    app: dov 
+    name: dov-deploy
+spec: 
+  # run 4 instance of a something, which is defined in a template.(in this case it is a pod)
+  replicas: 4
+  selector: 
+    matchLabels: # pods that belong to this deployment has the following labels (helps kubernetes to determine which ports belong to this deployment)
+      app: dov 
+      name: dov-po
+  template: # no header needed here
+    # pod template
+    metadata: 
+      name: dov-po # need name cause kubernetes references the name. 
+      namespace: myns
+      labels: # organisation needs to set a label.
+        app: dov 
+        name: dov-po
+    spec:
+      containers: 
+        - name: dov-container 
+          image: chukmunnlee/cfdsa-dov-bear:v1.1
+          imagePullPolicy: IfNotPresent # what to do when kubernetes wants to pull the image. --> can set to Never but node MUST have image preloaded.
+          env: 
+            - name: INSTANCE_NAME
+              value: my-first-deployment
+            - name: INSTANCE_HASH
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          ports: 
+            - containerPort: 3000 # container port not the port on your local cluster. 
+          # readinessProbe: # kubernetes checks if its ready (i.e. returns 200) before traffic is sent to it
+          livenessProbe: # performed outside the container not inside, so no need curl.
+            httpGet: # if dont set host, assume it is localhost 
+              path: /healthz
+              port: 3000
+
+

@@ -1,0 +1,64 @@
+--- 
+apiVersion: apps/v1
+kind: Deployment
+metadata: 
+  name: bggapp-deploy
+  namespace: bggns
+  labels: 
+    app: bgg 
+    name: bggapp-deploy
+spec: 
+  replicas: 5
+  selector: 
+    matchLabels: # pods that belong to this deployment has the following labels (helps kubernetes to determine which ports belong to this deployment)
+      app: bgg 
+      name: bggapp
+  template: # no header needed here
+    # pod template
+    metadata: 
+      name: bggapp
+      namespace: bggns # implied cause it is under the deploy, if set, must be the same namespace. 
+      labels: # organisation needs to set a label.
+        app: bgg 
+        name: bggapp
+    spec:
+      containers: 
+        - name: bggapp-container
+          image: stackupiss/bgg-backend:v2
+          imagePullPolicy: IfNotPresent # what to do when kubernetes wants to pull the image. --> can set to Never but node MUST have image preloaded.
+          envFrom: 
+            - configMapRef:
+                name: bgg-cm
+            - secretRef: 
+                name: bgg-secret
+          ports: 
+            - name: bgg-port
+              containerPort: 3000 # container port not the port on your local cluster. 
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000 
+          livenessProbe: # performed outside the container not inside, so no need curl.
+            httpGet: # if dont set host, assume it is localhost 
+              path: /healthz
+              port: 3000
+
+---
+apiVersion: v1
+kind: Service 
+metadata: 
+  name: bggapp-svc 
+  namespace: bggns
+  labels: 
+      app: bgg 
+      name: bggapp-svc 
+spec: 
+  type: ClusterIP
+  selector: 
+    app: bgg
+    name: bggapp
+  ports: 
+    - name: service-port
+      port: 80
+      targetPort: bgg-port
+

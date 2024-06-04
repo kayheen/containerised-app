@@ -1,0 +1,79 @@
+alias k=kubectl
+
+k cluster-info
+k get node
+k get no/node -owide (more details about node: ip, os image...)
+k get no/<id>
+k describe no/<id>
+k get pod -a
+k get deploy -A
+k get namespace
+k create ns mynamespace
+k get pod -nmynamespace
+k delete ns/mynamespace
+
+k get po -owide -n<namespace>
+# forward the container traffic to the pod port traffic (only for testing, not permanent)
+k <action> <resource> 0n<namespace> <pod>:<container>
+k port-forward pod/dov-po -nmyns 8080:3000
+
+# get logs 
+k logs po/dov-po -nmyns -f 
+
+# access the terminal of the kubernetes cluster + ls -l. (can only access if distroless)
+k exec po/dov-po -nmyns -ti -- ls -l
+
+k delete -f dov-bear.yml 
+
+k create -f dov-bear.yml 
+k get po/dov-po # can add a watch infront to list status. 
+k describe po/dov-po -nmyns # describe the information of the created po 
+
+# get back the original yaml of your resource.
+k get po/dov-po -nmyns -o yaml
+
+k get all -n myns #list everything pods, etc under a namespace. 
+k get all -n myns -owide 
+k get all -n myns --showlabel
+
+k delete po -n myns -l app=dov # delete all pods with label app = dov
+
+# port forward for deployment 
+k port-forward deploy/dov-deploy -n myns 8080:3000
+
+
+# creating/updating the kubernetes cluster
+k apply -f dov-bear.yml # it will update the changes for it, but cannot apply a resource that was created using create 
+
+
+echo -n 'this is my secret' | base64 # can just create a base64 hash of something, -n remove carriage return 
+
+k describe cm/dov-cm -n myns 
+k decribe secret/dov-secret -n myns
+k get secret/dov-secret -myns -oyaml 
+
+
+k describe svc/dov-svc -n myns # can see the endpoints (i.e ip addr of the ports), if configured correctly should have the number u defined 
+k get ep -n myns # list of endpoints  --> fter you create like a service
+
+
+k port-forward svc/dov-svc -n myns 8080:8080
+
+# error at kuberntes level - create/apply/describe/get 
+
+# error at application level - log
+
+
+k scale deploy/bggapp-deploy -n bbgns --replicas=5
+
+# list the deployment versions 
+k rollout history deploy/bggapp-deploy -n bggns 
+
+# undo the deployment version --> reverting back to old version 
+k rollout undo deploy/bggapp-deploy -n bbgns -to-revision=1 
+
+## figure out how come this scale doesnt work 
+k scale deployment.apps/bggapp-deploy -n bbgns --replicas=5 
+
+# get all pods with these fields and filter only those with labels bggapp-po
+k get po -n bggns -o custom-column='IMAGE:.spec.containers[].image,NAME:.spec.containers[].name,IP:status.podIP'-l name=bggapp-po

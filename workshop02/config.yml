@@ -1,0 +1,28 @@
+---
+# multiple yml files inside a file 
+apiVersion: v1 
+kind: ConfigMap 
+metadata: 
+  name: bgg-cm
+  namespace: bggns
+  labels: 
+    app: bgg 
+    name: bgg-cm
+data: 
+  BGG_DB_USER: root
+  # if same namespace then bggdb-svc is ok 
+  BGG_DB_HOST: bggdb-svc.bggns.svc.cluster.local
+
+--- 
+apiVersion: v1
+kind: Secret
+metadata: 
+  name: bgg-secret
+  namespace: bggns
+  labels: 
+    app: bgg 
+    name: bgg-secret
+type: Opaque # general secret
+data: 
+  # cannot type in pure string only base64
+  BGG_DB_PASSWORD: Y2hhbmdlaXQ=
