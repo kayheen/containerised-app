@@ -1,0 +1,118 @@
+---
+# multiple yml files inside a file 
+apiVersion: v1 
+kind: ConfigMap 
+metadata: 
+  name: dov-cm
+  namespace: myns
+  labels: 
+    app: dov 
+    name: dov-cm
+data: 
+  INSTANCE_NAME: name from configmap 
+  DB_HOST: myserver
+  host: | # multi-line files
+    this is a file 
+  value.yaml: | # which can be access when u mount the data into
+    commonLabels: 
+      dept: eng 
+    controller: 
+      image: <something> 
+
+--- 
+apiVersion: v1
+kind: Secret
+metadata: 
+  name: dov-secret
+  namespace: myns
+  labels: 
+    app: dov 
+    name: dov-secret
+type: Opaque # general secret
+data: 
+  # cannot type in pure string only base64
+  INSTANCE_HASH: aGVsbG9vbw==
+--- 
+apiVersion: apps/v1
+kind: Deployment
+metadata: 
+  name: dov-deploy # can create using k apply or k create 
+  # generateName: dov-deploy- # allows u to create MANY copies of the same yml, cause they will append prefix at the back. only can use with k create
+  namespace: myns
+  labels: 
+    app: dov 
+    name: dov-deploy
+spec: 
+  # run 4 instance of a something, which is defined in a template.(in this case it is a pod)
+  replicas: 4
+  selector: 
+    matchLabels: # pods that belong to this deployment has the following labels (helps kubernetes to determine which ports belong to this deployment)
+      app: dov 
+      name: dov-po
+  template: # no header needed here
+    # pod template
+    metadata: 
+      name: dov-po # need name cause kubernetes references the name. 
+      namespace: myns
+      labels: # organisation needs to set a label.
+        app: dov 
+        name: dov-po
+    spec:
+      volumes: 
+        - name: cm-vol 
+          confgiMap:
+            name: dov-cm 
+        - name: secret-vol
+          secret: 
+            secretName: dov-secret
+        #- name: myvol # bind mount 
+          # NEVER USE HOSTPATH
+          # hostPath: # create the volume inside the pod 
+          #   path: /tmp/mydir
+          #   type: DirectoryOrCreate # directory must exist else u create.
+          # emptyDir still not too bad. (tbh idk why)
+          # emptyDir: # duirng the duration when the pod is running, u can fill it up, but it is deleted when node is deleted 
+          # lightweight communication between 2 containers in the same pod. 
+      containers: 
+        - name: dov-container 
+          image: chukmunnlee/cfdsa-dov-bear:v1.1
+          imagePullPolicy: IfNotPresent # what to do when kubernetes wants to pull the image. --> can set to Never but node MUST have image preloaded.
+          envFrom: 
+            - configMapRef:
+                name: dov-cm
+            - secretRef: 
+                name: dov-secret
+          ports: 
+            - name: dov-port
+              containerPort: 3000 # container port not the port on your local cluster. 
+          # readinessProbe: # kubernetes checks if its ready (i.e. returns 200) before traffic is sent to it
+          livenessProbe: # performed outside the container not inside, so no need curl.
+            httpGet: # if dont set host, assume it is localhost 
+              path: /healthz
+              port: 3000
+          # mounting the configmap and secret
+          volumeMounts: 
+            - name: cm-vol
+              mountPath: /opt/configmap
+            - name: secret-vol 
+              mountPaht: /opt/secrets
+              readOnly: true
+---
+apiVersion: v1
+kind: Service 
+metadata: 
+  name: dov-svc 
+  namespace: myns
+  labels: 
+      app: dov 
+      name: dov-svc 
+spec: 
+  type: ClusterIP 
+  selector: 
+    app: dov
+    name: dov-po
+  ports: 
+    - name: service-port
+      port: 8080
+      targetPort: dov-port
+

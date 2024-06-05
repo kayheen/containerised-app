@@ -1,0 +1,53 @@
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+
+helm repo list # list the repos u currently have 
+help repo update # update existing repos ith has
+
+
+helm search repo ingress # search among the repos u have downloaded.
+
+helm search hub ingress # search among the repos in the INTERNET ]
+
+
+helm template my-ingress ingress-nginx/ingress-nginx --create-namespace -n ingress-nginx # create the template to check if the generated kuberntes file is correct
+
+# helm install <name of release> <image name in helm> -n <name of ns> --create-namespace
+helm install my-ingress ingress-nginx/ingress-nginx -n ingress-nginx --create-namespace # actually create the resources (namespace)
+
+# uninstall the release u just created
+helm uninstall my-ingress -n ingress-nginx 
+
+
+k exec -ti -myns <name of pod> -- /bin/sh
+
+# get the storage both the claim and the volume itself in myns 
+k get pvc,pv -n myns
+
+
+# if cluster dont have ingress class, then cannot do anything
+# lists ingress class name and details
+k get ingressClass 
+
+k describe ingressClass/nginx
+
+# the ui to see kubernetes resources with colour and more organised 
+https://github.com/derailed/k9s/releases 
+
+# can use fake domain names using nip.io
+
+# list the ingress created 
+k get all.ing -n <namespace name> 
+k describe ing/dov-ing -n dovns
+
+# get endpoints 
+k get ep -n codeserver-ns
+
+# open documentation on commandline 
+k explain ing.spec
+
+
+# after installing metric-server
+k top no # can see how much each pool uses the cpu and memory etc. 
+k top po -A --sort-by=memory 
+k top no -n codeserver-ns
+k top po -n codeserver-ns

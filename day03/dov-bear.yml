@@ -1,0 +1,92 @@
+---
+apiVersion: v1 
+kind: Namespace
+metadata: 
+  name: dovns
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dov-deploy 
+  #generateName: dov-deploy-
+  namespace: dovns
+  labels: 
+    app: dov 
+    name: dov-deploy 
+spec: 
+  replicas: 4
+  selector:
+    matchLabels:
+      app: dov 
+      name: dov-po
+  template:
+    # the pod template
+    metadata:
+      name: dov-po
+      namespace: myns
+      labels:
+        app: dov 
+        name: dov-po
+    spec:
+      volumes:
+      - name: myvol
+        emptyDir: {}
+      containers:
+      - name: dov-container 
+        image: chukmunnlee/cfdsa-dov-bear:v1.1
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: INSTANCE_NAME
+          value: my-first-deployment
+        - name: INSTANCE_HASH
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        ports:
+        - containerPort: 3000
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 3000
+
+--- 
+apiVersion: v1 
+kind: Service
+metadata:
+  name: dov-svc
+  namespace: dovns 
+  labels: 
+    app: dov 
+    name: dov-svc
+spec:
+  selector:
+    app: dov 
+    name: dov-po
+  ports:
+  - name: dov-svc-port
+    port: 8080
+    targetPort: 3000
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress 
+metadata:  #ingress can only route traffic to itsown namespace not to another namespace
+  name: dov-ing 
+  namespace: dovns
+  labels: 
+    app: dov 
+    name: dov-ing 
+spec: 
+  ingressClassName: nginx
+  rules: 
+    - host: dov-bear.<nginx controller ip addr>.nip.io
+      http: 
+        paths: 
+          - path: /
+            pathType: Prefix # any request with a / will match this one 
+            backend: 
+              service: 
+                name: dov-svc
+                port:
+                  name: dov-svc-port
