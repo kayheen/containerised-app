@@ -23,12 +23,14 @@ spec:
     app: minio
     name: minio-po
   ports: 
-    - name: data-port
-      port: 9000
-      targetPort: 9000
-    - name: console-port
-      port: 9090
-      targetPort: 9090
+    - port: 9001
+      targetPort: 9001
+    # - name: data-port
+    #   port: 9000
+    #   targetPort: 9000
+    # - name: console-port
+    #   port: 9090
+    #   targetPort: 9090
 
 
 ---
@@ -113,12 +115,12 @@ spec:
             - name: MINIO_CI_CD
               value: "1"
           ports: 
-            # - containerPort: 9001
+            - containerPort: 9001
             # the teacher's 
-            - name: data-port 
-              containerPort: 9000
-            - name: console-port
-              containerPort: 9090
+            # - name: data-port 
+            #   containerPort: 9000
+            # - name: console-port
+            #   containerPort: 9090
           volumeMounts:
             - name: minio-pvc
               mountPath: /bitnami/minio/data
