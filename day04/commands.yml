@@ -1,0 +1,20 @@
+k describe hpa/<name> -n dovns # can view the metrics that the hpa is looking for. 
+
+# some commands to see the configuration for kubernetes 
+k config get-users
+k config get-clusters
+k config get-contexts
+
+# can set the default namespace so u dont have to define -n in every command 
+k config set-context --current --namespace <namespace name> 
+
+
+# to apply a kustomization (go to the overlay target dir) --> this dry runs, don't create. 
+k apply -k . -o yaml --dry-run=client > dev.yml 
+
+# then to apply 
+k apply -k .
+# to delete 
+k delete -k . 
+
+k run netshoot -ti --rm --image=nicolaka/netshoot -- /bin/bash

@@ -1,0 +1,209 @@
+---
+# namespace
+apiVersion: v1
+kind: Namespace 
+metadata: 
+  name: minions
+  labels: 
+    app: minio
+    name: minions
+---
+# headless service to deploy the s3 
+apiVersion: v1
+kind: Service
+metadata: 
+  name: minio-hsvc
+  namespace: minions
+  labels: 
+    app: minio
+    name: minio-hsvc 
+spec: 
+  clusterIP: None
+  selector: 
+    app: minio
+    name: minio-po
+  ports: 
+    - name: data-port
+      port: 9000
+      targetPort: 9000
+    - name: console-port
+      port: 9090
+      targetPort: 9090
+
+
+---
+# headless service to deploy the s3 --> what the teacher did.
+# apiVersion: v1
+# kind: Service
+# metadata: 
+#   name: minio-hsvc
+#   namespace: minions
+#   labels: 
+#     app: minio
+#     name: minio-hsvc 
+# spec: 
+#   clusterIP: None
+#   selector: 
+#     app: minio
+#     name: minio-po
+#   ports: 
+#     - name: data-port
+#       port: 9000
+#       targetPort: 9000
+#     - name: console-port
+#       port: 9090
+#       targetPort: 9090
+---
+# stateful sets 
+apiVersion: apps/v1 
+kind: StatefulSet
+metadata: 
+  name: minio-sts 
+  namespace: minions
+  labels: 
+    app: minio
+    name: minio-sts 
+spec: 
+  serviceName: minio-hsvc 
+  replicas: 4 # 4 instances of db node
+  selector:
+    matchLabels: 
+      app: minio
+      name: minio-po
+  volumeClaimTemplates: 
+    - metadata: 
+        name: minio-pvc 
+        labels: 
+          app: minio 
+          name: minio-pvc 
+      spec: 
+        storageClassName: do-block-storage 
+        accessModes: [ ReadWriteOncePod ] # only dedicate to the pod
+        resources: 
+          requests: 
+            storage: 1Gi
+  template: 
+    metadata: 
+      name: minio-po 
+      labels: 
+        app: minio 
+        name: minio-po 
+    spec: 
+      # to fix the permission issue to access the volume for non root user, mentioned in class.
+      securityContext: 
+        fsGroup: 1001
+      containers: 
+        - name: minio-container 
+          image: bitnami/minio:latest
+          # run this command once the pod starts 
+          command: 
+            - minio
+            - server 
+            - --address=:9000
+            - --console-address=:9090
+            - http://minio-sts-{0...3}.minio-hsvc.minions.svc.cluster.local #same namespace = http://minio-sts-{0...3} , else if same cluster then need use the whole domain.
+          imagePullPolicy: IfNotPresent
+          env: 
+            - name: MINIO_ROOT_USER
+              value: minio-root-user
+            - name: MINIO_ROOT_PASSWORD
+              value: minio-root-password
+            - name: MINIO_DATA_DIR
+              value: /bitnami/minio/data
+            - name: MINIO_CI_CD
+              value: "1"
+          ports: 
+            # - containerPort: 9001
+            # the teacher's 
+            - name: data-port 
+              containerPort: 9000
+            - name: console-port
+              containerPort: 9090
+          volumeMounts:
+            - name: minio-pvc
+              mountPath: /bitnami/minio/data
+          # set cpu consumption 
+          resources:
+            requests: 
+              cpu: 200m # 1vcpu = 1000m 
+              memory: 250Mi
+          # probes 
+          readinessProbe:
+            httpGet:
+              path: /minio/health/ready
+              port: 9000 
+            initialDelaySeconds: 100
+          livenessProbe: # performed outside the container not inside, so no need curl.
+            httpGet: # if dont set host, assume it is localhost 
+              path: /minio/health/ready
+              port: 9000
+            initialDelaySeconds: 100 
+---
+apiVersion: v1 
+kind: Service 
+metadata: 
+  name: cli
+  namespace: minions
+  labels: 
+    app: minio 
+    name: cli
+spec: 
+  type: ClusterIP 
+  selector: 
+    app: minio 
+    name: minio-po
+    # apps.kubernetes.io/pod-index: "0"
+  ports:
+    - port: 9000 
+      targetPort: 9000
+---
+apiVersion: v1 
+kind: Service 
+metadata: 
+  name: console
+  namespace: minions
+  labels: 
+    app: minio 
+    name: console
+spec: 
+  type: ClusterIP 
+  selector: 
+    app: minio 
+    name: minio-po
+  ports:
+    - port: 9090 
+      targetPort: 9090
+--- 
+# ingress to direct traffic
+apiVersion: networking.k8s.io/v1
+kind: Ingress 
+metadata: 
+  name: minio-ing 
+  namespace: minions
+  labels: 
+    app: minio
+    name: minio-ing 
+spec: 
+  ingressClassName: nginx 
+  rules: 
+    - host: data.104.248.97.44.nip.io
+      http: 
+        paths: 
+          - path: /
+            pathType: Prefix 
+            backend: 
+              service: 
+                name: cli
+                port: 
+                  number: 9000
+    - host: console.104.248.97.44.nip.io
+      http: 
+        paths: 
+          - path: /
+            pathType: Prefix 
+            backend: 
+              service: 
+                name: console
+                port: 
+                  number: 9090
+

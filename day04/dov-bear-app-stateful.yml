@@ -1,0 +1,64 @@
+--- 
+apiVersion: v1 
+kind: Service
+metadata:
+  name: dov-hsvc
+  namespace: dovns 
+  labels: 
+    app: dov 
+    name: dov-hsvc
+spec:
+  clusterIP: None
+  selector:
+    app: dov 
+    name: dov-po
+  ports:
+  - name: dov-svc-port
+    port: 8080
+    targetPort: 3000
+
+---
+apiVersion: apps/v1
+kind: StatefulSet 
+metadata: 
+  name: dov-sts 
+  namespace: dovns
+  labels: 
+    app: dov 
+    name: dov-sts
+spec: 
+  replicas: 4
+  selector:
+    matchLabels:
+      app: dov 
+      name: dov-po
+  service: dov-hsvc
+  template:
+    # the pod template
+    metadata:
+      name: dov-po
+      namespace: myns
+      labels:
+        app: dov 
+        name: dov-po
+    spec:
+      volumes:
+      - name: myvol
+        emptyDir: {}
+      containers:
+      - name: dov-container 
+        image: chukmunnlee/cfdsa-dov-bear:v1.1
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: INSTANCE_NAME
+          value: my-first-deployment
+        - name: INSTANCE_HASH
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        ports:
+        - containerPort: 3000
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 3000

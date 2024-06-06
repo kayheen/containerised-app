@@ -1,0 +1,29 @@
+---
+# this is the horizontal port autoscaler 
+apiVersion: autoscaling/v2
+kind: HorizontalPortAutoscaler
+metadata: 
+  name: dov-hpa
+  namespace: dovns
+  labels: 
+    app: dovns
+    name: dov-hps
+spec: 
+  minReplicas: 1
+  maxReplicas: 6 
+  scaleTargetRef: # what resource u r scaling 
+    apiVersion: apps/v1
+    kind: Deployment
+    name: dov-deploy
+  # need to define requests and limits so it can gauge the utilization 
+  metrics: 
+    - type: Resource 
+      resource: 
+        name: memory
+        target: Utilization #Utilization, Value or AverageValue
+        averageUtilization: 60 
+    - type: Resource 
+      resource: 
+        name: cpu
+        target: Utilization #Utilization, Value or AverageValue
+        averageUtilization: 60 
