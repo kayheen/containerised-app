@@ -9,6 +9,11 @@ metadata:
     name: bggapp-deploy
 spec: 
   replicas: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable:
   selector: 
     matchLabels: # pods that belong to this deployment has the following labels (helps kubernetes to determine which ports belong to this deployment)
       app: bgg 
@@ -24,7 +29,7 @@ spec:
     spec:
       containers: 
         - name: bggapp-container
-          image: stackupiss/bgg-backend:v2
+          image: stackupiss/bgg-backend:v1
           imagePullPolicy: IfNotPresent # what to do when kubernetes wants to pull the image. --> can set to Never but node MUST have image preloaded.
           envFrom: 
             - configMapRef:
