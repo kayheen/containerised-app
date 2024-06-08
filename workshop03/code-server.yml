@@ -72,7 +72,7 @@ spec:
     spec:
       volumes: 
         # what is the difference when attaching as volume and attaching as env variable
-        # env variable is accessed why the app is running
+        # env variable is accessed when the app is running as env variable
         # volume is accessed as a file during the process. 
         # - name: cm-vol 
         #   configMap:
@@ -105,13 +105,20 @@ spec:
               mountPath: /config/workspace
           resources:
             # if only requests set, this pod will be the second one to go.
+            # requests: 
+            #   # lower limit
+            #   cpu: 16m # 1vcpu = 1000m 
+            #   memory: 16Mi
+            # limits: 
+            #   cpu: 32m # spikes of cpu is still acceptable but consistent one is not
+            #   memory: 32Mi # memory cannot exceed this, else the container will be killed.
             requests: 
               # lower limit
-              cpu: 16m # 1vcpu = 1000m 
-              memory: 16Mi
-            limits: 
-              cpu: 32m # spikes of cpu is still acceptable but consistent one is not
-              memory: 32Mi # memory cannot exceed this, else the container will be killed.
+              cpu: 200m # 1vcpu = 1000m 
+              memory: 256Mi
+            # limits: 
+            #   cpu: 200m # spikes of cpu is still acceptable but consistent one is not
+            #   memory: 256Mi # memory cannot exceed this, else the container will be killed.
             # request and limit defined --> QoS = burstable 
             # request and limit same --> QoS = guaranteed.
 
